@@ -915,6 +915,45 @@ h3 {
   text-decoration: underline;
 }
 
+.content-card--clickable {
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.content-card--clickable:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-strong);
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.2);
+}
+
+.content-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.card-action-button {
+  appearance: none;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(102, 212, 255, 0.24);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(98, 206, 255, 0.18), rgba(18, 55, 77, 0.28));
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.card-action-button--ghost {
+  background: rgba(8, 22, 34, 0.76);
+}
+
 .control-panel {
   display: grid;
   gap: 14px;

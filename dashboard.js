@@ -354,6 +354,109 @@ function getDownloads() {
   });
 }
 
+function pauseDownload(downloadId) {
+  return new Promise((resolve) => {
+    chrome.downloads.pause(downloadId, () => resolve());
+  });
+}
+
+function resumeDownload(downloadId) {
+  return new Promise((resolve) => {
+    chrome.downloads.resume(downloadId, () => resolve());
+  });
+}
+
+function cancelDownload(downloadId) {
+  return new Promise((resolve) => {
+    chrome.downloads.cancel(downloadId, () => resolve());
+  });
+}
+
+function showDownloadFile(downloadId) {
+  return new Promise((resolve) => {
+    chrome.downloads.show(downloadId);
+    resolve();
+  });
+}
+
+function createActionButton(label, className, onClick) {
+  const button = document.createElement("button");
+  button.className = className;
+  button.type = "button";
+  button.textContent = label;
+  button.addEventListener("click", async (event) => {
+    event.stopPropagation();
+    await onClick();
+  });
+  return button;
+}
+
+function createClickableCard(tag, title, description, url, metaItems = []) {
+  const card = createCard(tag, title, description, url, metaItems);
+
+  if (url) {
+    card.classList.add("content-card--clickable");
+    card.addEventListener("click", () => {
+      chrome.tabs.update({ url });
+    });
+  }
+
+  return card;
+}
+
+function createDownloadCard(item) {
+  const name = item.filename ? item.filename.split(/[/\\]/).pop() : "File tanpa nama";
+  const description = item.finalUrl
+    ? "Sumber file tersedia dan bisa dibuka langsung dari panel."
+    : "Download tersimpan di sesi browser aktif.";
+  const card = createCard(
+    "Download",
+    name || "File tanpa nama",
+    description,
+    item.url || item.finalUrl || "",
+    [item.state || "unknown", formatDate(item.startTime)]
+  );
+  const actions = document.createElement("div");
+
+  actions.className = "content-card__actions";
+
+  if (item.state === "in_progress" && !item.paused) {
+    actions.append(
+      createActionButton("Pause", "card-action-button", async () => {
+        await pauseDownload(item.id);
+        await renderDownloads();
+      })
+    );
+  }
+
+  if (item.state === "in_progress" && item.paused) {
+    actions.append(
+      createActionButton("Lanjut", "card-action-button", async () => {
+        await resumeDownload(item.id);
+        await renderDownloads();
+      })
+    );
+  }
+
+  if (item.state === "in_progress") {
+    actions.append(
+      createActionButton("Batalkan", "card-action-button card-action-button--ghost", async () => {
+        await cancelDownload(item.id);
+        await renderDownloads();
+      })
+    );
+  }
+
+  actions.append(
+    createActionButton("Buka Folder", "card-action-button card-action-button--ghost", async () => {
+      await showDownloadFile(item.id);
+    })
+  );
+
+  card.append(actions);
+  return card;
+}
+
 function flattenBookmarks(nodes, bucket = []) {
   nodes.forEach((node) => {
     if (node.url) {
@@ -381,10 +484,22 @@ function getHistory() {
     chrome.history.search(
       {
         text: "",
-        maxResults: 30,
+        maxResults: 80,
         startTime: Date.now() - 1000 * 60 * 60 * 24 * 30
       },
-      (items) => resolve(items || [])
+      (items) => {
+        const filteredItems = (items || []).filter((item) => {
+          const url = item.url || "";
+
+          if (!url) {
+            return false;
+          }
+
+          return !url.startsWith("chrome-extension://") && !url.startsWith("chrome://");
+        });
+
+        resolve(filteredItems.slice(0, 30));
+      }
     );
   });
 }
@@ -662,18 +777,7 @@ async function renderDownloads() {
 
   dataListElement.replaceChildren(
     ...items.map((item) => {
-      const name = item.filename ? item.filename.split(/[/\\]/).pop() : "File tanpa nama";
-      const description = item.finalUrl
-        ? "Sumber file tersedia dan bisa dibuka langsung dari panel."
-        : "Download tersimpan di sesi browser aktif.";
-
-      return createCard(
-        "Download",
-        name || "File tanpa nama",
-        description,
-        item.url || item.finalUrl || "",
-        [item.state || "unknown", formatDate(item.startTime)]
-      );
+      return createDownloadCard(item);
     })
   );
 }
@@ -721,7 +825,7 @@ async function renderHistory() {
 
   dataListElement.replaceChildren(
     ...items.map((item) => {
-      return createCard(
+      return createClickableCard(
         "History",
         item.title || item.url || "Tanpa judul",
         "Jejak halaman yang baru dibuka dari browser aktif.",
