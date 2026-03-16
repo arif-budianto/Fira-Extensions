@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fira New Tab</title>
+    <link rel="stylesheet" href="dashboard.css" />
+  </head>
+  <body>
+    <div class="onboarding-backdrop is-hidden" id="onboarding-backdrop">
+      <section class="onboarding-modal" aria-labelledby="onboarding-title" aria-modal="true" role="dialog">
+        <div class="onboarding-modal__head">
+          <p class="eyebrow">Fira Setup</p>
+          <h2 id="onboarding-title">Kenalan dulu, Abang.</h2>
+          <p class="onboarding-copy">
+            Isi nama dan zona waktu dulu biar Fira bisa kasih sapaan yang pas setiap buka tab baru.
+          </p>
+        </div>
+
+        <form id="onboarding-form" class="onboarding-form">
+          <label class="form-field">
+            <span>Nama</span>
+            <input id="profile-name" name="profile-name" type="text" maxlength="32" placeholder="Contoh: Tigers" required />
+          </label>
+
+          <label class="form-field">
+            <span>Zona waktu</span>
+            <select id="profile-timezone" name="profile-timezone" required>
+              <option value="Asia/Jakarta">WIB</option>
+              <option value="Asia/Makassar">WITA</option>
+              <option value="Asia/Jayapura">WIT</option>
+            </select>
+          </label>
+
+          <button class="onboarding-submit" type="submit">Simpan profil</button>
+        </form>
+      </section>
+    </div>
+
+    <main class="dashboard-shell dashboard-shell--newtab">
+      <section class="dashboard-hero dashboard-hero--newtab">
+        <div class="dashboard-hero__glow"></div>
+        <div class="dashboard-hero__grid"></div>
+
+        <div class="dashboard-hero__content dashboard-hero__content--newtab">
+          <div class="hero-copy">
+            <div>
+              <p class="eyebrow">Fira Live Interface</p>
+              <h1 id="view-title">Fira Overview</h1>
+              <p class="subtitle" id="view-subtitle">
+                Dashboard informasi modern yang langsung aktif setiap kali Abang buka tab baru.
+              </p>
+            </div>
+
+            <div class="hero-actions">
+              <button class="hero-action" data-view="overview">Halaman utama</button>
+              <button class="hero-action hero-action--ghost" data-view="history">Lihat history</button>
+            </div>
+          </div>
+
+          <div class="hero-side">
+            <div class="radar-card">
+              <div class="radar-card__ring radar-card__ring--outer"></div>
+              <div class="radar-card__ring radar-card__ring--inner"></div>
+              <div class="radar-card__core" aria-hidden="true">
+                <svg class="radar-card__avatar" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="fira-avatar-skin" x1="24" y1="18" x2="68" y2="78" gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#F8D7CC" />
+                      <stop offset="1" stop-color="#D89F8D" />
+                    </linearGradient>
+                    <linearGradient id="fira-avatar-hair" x1="20" y1="10" x2="72" y2="52" gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#B7F0FF" />
+                      <stop offset="1" stop-color="#35B8FF" />
+                    </linearGradient>
+                    <linearGradient id="fira-avatar-neck" x1="35" y1="56" x2="61" y2="84" gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#D5F3FF" />
+                      <stop offset="1" stop-color="#63D1FF" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M28 42C28 27.64 37.4 17 48.9 17C60.22 17 68.8 26.8 68.8 41.18V46.3C68.8 60.8 59.22 71 47.56 71C35.9 71 28 60.76 28 46.3V42Z" fill="url(#fira-avatar-skin)"/>
+                  <path d="M25.5 42.4C25.5 26.16 36.62 14 50.68 14C64.2 14 73.5 24.1 73.5 38.7C73.5 45.88 70.92 50.14 66.44 53.42C63.78 43.28 56.76 35.86 45.32 33.08C38.76 39.42 34.72 43.18 28.42 44.88C26.5 45.4 25.5 44.48 25.5 42.4Z" fill="url(#fira-avatar-hair)"/>
+                  <path d="M40.4 52.2C42 54.26 44.4 55.3 47.04 55.3C49.7 55.3 52.02 54.26 53.7 52.2" stroke="#774F43" stroke-width="2.1" stroke-linecap="round"/>
+                  <circle cx="40.8" cy="45.3" r="2.2" fill="#1D2A36"/>
+                  <circle cx="54.1" cy="45.3" r="2.2" fill="#1D2A36"/>
+                  <path d="M41.7 67.2H54.6V74.6C54.6 78.8 51.54 82 47.78 82C44.38 82 41.7 79.08 41.7 74.6V67.2Z" fill="url(#fira-avatar-neck)"/>
+                  <path d="M33.5 79.8C37.4 75.72 41.94 73.6 48.18 73.6C54.38 73.6 58.82 75.66 62.7 79.8" stroke="#78DBFF" stroke-width="4.2" stroke-linecap="round"/>
+                </svg>
+              </div>
+            </div>
+
+            <div class="hero-meta">
+              <div class="hero-meta__item">
+                <span class="label">Status</span>
+                <strong id="view-status">Loading</strong>
+              </div>
+              <div class="hero-meta__item">
+                <span class="label">Records</span>
+                <strong id="view-count">0</strong>
+              </div>
+              <div class="hero-meta__item hero-meta__item--wide">
+                <span class="label" id="hero-timezone-label">Local Time</span>
+                <strong id="hero-clock">--:--</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="dashboard-main">
+        <section class="content-panel content-panel--main">
+          <div class="panel-head">
+            <div>
+              <h2 id="panel-title">Overview</h2>
+              <p class="panel-subtitle">Halaman utama Fira dengan informasi ringkas dan akses cepat.</p>
+            </div>
+            <span id="panel-caption">Live interface</span>
+          </div>
+
+          <div class="content-scroll">
+            <div class="data-list" id="data-list"></div>
+          </div>
+        </section>
+
+        <aside class="control-panel">
+          <button class="control-card" data-view="overview">
+            <span class="card-tag">01</span>
+            <strong>Overview</strong>
+            <p>Halaman informasi utama Fira yang bersih dan modern.</p>
+          </button>
+
+          <button class="control-card" data-view="downloads">
+            <span class="card-tag">02</span>
+            <strong>Downloads</strong>
+            <p>Lihat file terbaru yang masuk ke browser Abang.</p>
+          </button>
+
+          <button class="control-card" data-view="bookmarks">
+            <span class="card-tag">03</span>
+            <strong>Bookmarks</strong>
+            <p>Akses cepat ke link tersimpan tanpa keluar dari dashboard.</p>
+          </button>
+
+          <button class="control-card" data-view="history">
+            <span class="card-tag">04</span>
+            <strong>History</strong>
+            <p>Buka kembali jejak browsing terbaru dengan satu panel.</p>
+          </button>
+        </aside>
+      </div>
+    </main>
+
+    <script src="dashboard.js"></script>
+  </body>
+</html>

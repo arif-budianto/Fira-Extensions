@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Fira",
+  "version": "1.0.0",
+  "description": "Extension Chrome modern bertema Fira dengan nuansa asisten futuristik.",
+  "permissions": ["tabs", "bookmarks", "downloads", "history", "storage"],
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "action": {
+    "default_title": "Fira"
+  }
+}
