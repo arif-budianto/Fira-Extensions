@@ -468,6 +468,13 @@ h1 {
   filter: drop-shadow(0 0 12px rgba(104, 216, 255, 0.2));
 }
 
+.radar-card__avatar-image {
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 12px rgba(104, 216, 255, 0.2));
+}
+
 .hero-meta__item strong,
 #hero-clock {
   display: block;

@@ -4,6 +4,12 @@
   "version": "1.0.0",
   "description": "Extension Chrome modern bertema Fira dengan nuansa asisten futuristik.",
   "permissions": ["tabs", "bookmarks", "downloads", "history", "storage"],
+  "icons": {
+    "16": "profile.png",
+    "32": "profile.png",
+    "48": "profile.png",
+    "128": "profile.png"
+  },
   "chrome_url_overrides": {
     "newtab": "newtab.html"
   },
