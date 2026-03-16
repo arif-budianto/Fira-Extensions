@@ -36,6 +36,13 @@ const onboardingBackdropElement = document.getElementById("onboarding-backdrop")
 const onboardingFormElement = document.getElementById("onboarding-form");
 const profileNameElement = document.getElementById("profile-name");
 const profileTimezoneElement = document.getElementById("profile-timezone");
+const settingsBackdropElement = document.getElementById("settings-backdrop");
+const settingsFormElement = document.getElementById("settings-form");
+const settingsNameElement = document.getElementById("settings-name");
+const settingsTimezoneElement = document.getElementById("settings-timezone");
+const settingsThemeElement = document.getElementById("settings-theme");
+const settingsFabElement = document.getElementById("settings-fab");
+const settingsCancelElement = document.getElementById("settings-cancel");
 
 const timezoneLabels = {
   "Asia/Jakarta": "WIB",
@@ -59,6 +66,27 @@ const dailyMessages = [
 let profileState = null;
 let todoState = [];
 let todoEditingId = null;
+
+const themePresets = {
+  cyan: {
+    accent: "#66d4ff",
+    accentGlow: "rgba(102, 212, 255, 0.22)",
+    line: "rgba(95, 206, 255, 0.14)",
+    lineStrong: "rgba(95, 206, 255, 0.4)"
+  },
+  emerald: {
+    accent: "#5fe4c6",
+    accentGlow: "rgba(95, 228, 198, 0.22)",
+    line: "rgba(95, 228, 198, 0.14)",
+    lineStrong: "rgba(95, 228, 198, 0.38)"
+  },
+  amber: {
+    accent: "#ffbf69",
+    accentGlow: "rgba(255, 191, 105, 0.22)",
+    line: "rgba(255, 191, 105, 0.14)",
+    lineStrong: "rgba(255, 191, 105, 0.38)"
+  }
+};
 
 function getCurrentView() {
   const params = new URLSearchParams(window.location.search);
@@ -216,6 +244,15 @@ function saveProfile(profile) {
   });
 }
 
+function applyTheme(themeKey) {
+  const theme = themePresets[themeKey] || themePresets.cyan;
+
+  document.documentElement.style.setProperty("--accent", theme.accent);
+  document.documentElement.style.setProperty("--accent-glow", theme.accentGlow);
+  document.documentElement.style.setProperty("--line", theme.line);
+  document.documentElement.style.setProperty("--line-strong", theme.lineStrong);
+}
+
 function getTodos() {
   return new Promise((resolve) => {
     chrome.storage.local.get(["firaTodos"], (result) => {
@@ -240,6 +277,24 @@ function toggleOnboarding(show) {
   }
 
   onboardingBackdropElement.classList.toggle("is-hidden", !show);
+}
+
+function toggleSettings(show) {
+  if (!settingsBackdropElement) {
+    return;
+  }
+
+  settingsBackdropElement.classList.toggle("is-hidden", !show);
+}
+
+function syncSettingsForm() {
+  if (!settingsNameElement || !settingsTimezoneElement || !settingsThemeElement) {
+    return;
+  }
+
+  settingsNameElement.value = profileState?.name || "";
+  settingsTimezoneElement.value = profileState?.timezone || "Asia/Jakarta";
+  settingsThemeElement.value = profileState?.theme || "cyan";
 }
 
 function bindOnboarding() {
@@ -998,10 +1053,60 @@ async function bootstrapProfile() {
 
   if (!profileState) {
     toggleOnboarding(true);
+    applyTheme("cyan");
     return;
   }
 
+  if (!profileState.theme) {
+    profileState = {
+      ...profileState,
+      theme: "cyan"
+    };
+    await saveProfile(profileState);
+  }
+
+  applyTheme(profileState.theme);
   toggleOnboarding(false);
+}
+
+function bindSettings() {
+  if (!settingsFabElement || !settingsFormElement || !settingsCancelElement) {
+    return;
+  }
+
+  settingsFabElement.addEventListener("click", () => {
+    syncSettingsForm();
+    toggleSettings(true);
+  });
+
+  settingsCancelElement.addEventListener("click", () => {
+    toggleSettings(false);
+  });
+
+  settingsFormElement.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const name = settingsNameElement.value.trim();
+    const timezone = settingsTimezoneElement.value;
+    const theme = settingsThemeElement.value;
+
+    if (!name || !timezone || !theme) {
+      return;
+    }
+
+    profileState = {
+      ...profileState,
+      name,
+      timezone,
+      theme
+    };
+
+    await saveProfile(profileState);
+    applyTheme(theme);
+    updateClock();
+    updateMeta(getCurrentView(), Number(countElement.textContent || "0"));
+    toggleSettings(false);
+  });
 }
 
 async function bootstrapTodos() {
@@ -1011,6 +1116,7 @@ async function bootstrapTodos() {
 async function bootstrapApp() {
   bootstrapInitialState();
   bindOnboarding();
+  bindSettings();
   await bootstrapProfile();
   await bootstrapTodos();
   updateClock();

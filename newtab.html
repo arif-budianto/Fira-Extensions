@@ -37,6 +37,48 @@
       </section>
     </div>
 
+    <div class="settings-backdrop is-hidden" id="settings-backdrop">
+      <section class="onboarding-modal" aria-labelledby="settings-title" aria-modal="true" role="dialog">
+        <div class="onboarding-modal__head">
+          <p class="eyebrow">Fira Settings</p>
+          <h2 id="settings-title">Atur pengalaman Fira.</h2>
+          <p class="onboarding-copy">
+            Ubah nama, zona waktu, dan tema tampilan kapan saja sesuai preferensi Abang.
+          </p>
+        </div>
+
+        <form id="settings-form" class="onboarding-form">
+          <label class="form-field">
+            <span>Nama</span>
+            <input id="settings-name" name="settings-name" type="text" maxlength="32" placeholder="Contoh: Tigers" required />
+          </label>
+
+          <label class="form-field">
+            <span>Zona waktu</span>
+            <select id="settings-timezone" name="settings-timezone" required>
+              <option value="Asia/Jakarta">WIB</option>
+              <option value="Asia/Makassar">WITA</option>
+              <option value="Asia/Jayapura">WIT</option>
+            </select>
+          </label>
+
+          <label class="form-field">
+            <span>Tema warna</span>
+            <select id="settings-theme" name="settings-theme" required>
+              <option value="cyan">Neo Cyan</option>
+              <option value="emerald">Emerald Grid</option>
+              <option value="amber">Amber Pulse</option>
+            </select>
+          </label>
+
+          <div class="settings-actions">
+            <button class="onboarding-submit onboarding-submit--ghost" id="settings-cancel" type="button">Tutup</button>
+            <button class="onboarding-submit" type="submit">Simpan perubahan</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
     <main class="dashboard-shell dashboard-shell--newtab">
       <section class="dashboard-hero dashboard-hero--newtab">
         <div class="dashboard-hero__glow"></div>
@@ -152,6 +194,10 @@
         </aside>
       </div>
     </main>
+
+    <button class="settings-fab" id="settings-fab" type="button" aria-label="Buka pengaturan Fira">
+      Settings
+    </button>
 
     <script src="dashboard.js"></script>
   </body>
