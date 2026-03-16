@@ -24,11 +24,7 @@ body {
   height: 100%;
   overflow: hidden;
   background:
-    radial-gradient(circle at 38% 22%, rgba(90, 198, 255, 0.1), transparent 12%),
-    radial-gradient(circle at 62% 28%, rgba(255, 173, 92, 0.1), transparent 10%),
-    radial-gradient(circle at 50% 50%, rgba(71, 159, 255, 0.1), transparent 20%),
-    radial-gradient(circle at top left, rgba(31, 129, 191, 0.18), transparent 18%),
-    radial-gradient(circle at top right, rgba(28, 87, 129, 0.14), transparent 20%),
+    linear-gradient(135deg, rgba(7, 20, 31, 0.98), rgba(3, 9, 16, 1)),
     linear-gradient(180deg, var(--bg), var(--bg-deep));
   color: var(--text);
   font-family: "JetBrains Mono", "SFMono-Regular", "Menlo", "Consolas", monospace;
@@ -43,16 +39,12 @@ body::before {
   position: fixed;
   inset: 0;
   background:
-    linear-gradient(140deg, transparent 0 22%, rgba(149, 221, 255, 0.12) 22.2%, transparent 22.5%) 0 0 / 240px 240px,
-    linear-gradient(140deg, transparent 0 58%, rgba(149, 221, 255, 0.07) 58.2%, transparent 58.5%) 0 0 / 320px 320px,
-    linear-gradient(90deg, transparent 0 14%, rgba(111, 206, 255, 0.07) 14.1%, rgba(111, 206, 255, 0.07) 14.3%, transparent 14.4%) 0 58% / 100% 180px,
-    linear-gradient(90deg, transparent 0 22%, rgba(255, 184, 110, 0.08) 22.1%, rgba(255, 184, 110, 0.08) 22.25%, transparent 22.35%) 0 54% / 100% 220px,
-    radial-gradient(circle at 38% 22%, rgba(111, 221, 255, 0.95) 0 1px, transparent 3px),
-    radial-gradient(circle at 44% 26%, rgba(111, 221, 255, 0.9) 0 1.5px, transparent 4px),
-    radial-gradient(circle at 51% 24%, rgba(255, 186, 113, 0.9) 0 1.5px, transparent 4px),
-    radial-gradient(circle at 57% 29%, rgba(111, 221, 255, 0.8) 0 1.5px, transparent 4px),
-    radial-gradient(circle at 50% 50%, rgba(255, 169, 101, 0.24), transparent 12%);
-  opacity: 0.9;
+    linear-gradient(125deg, transparent 0 24%, rgba(109, 208, 255, 0.06) 24.1%, transparent 24.3%) 0 0 / 320px 320px,
+    linear-gradient(125deg, transparent 0 61%, rgba(109, 208, 255, 0.03) 61.1%, transparent 61.3%) 0 0 / 420px 420px,
+    linear-gradient(90deg, transparent 0 18%, rgba(98, 199, 255, 0.035) 18.1%, transparent 18.25%) 0 34% / 100% 180px,
+    linear-gradient(90deg, transparent 0 42%, rgba(98, 199, 255, 0.03) 42.1%, transparent 42.25%) 0 58% / 100% 220px,
+    linear-gradient(90deg, transparent 0 68%, rgba(98, 199, 255, 0.025) 68.1%, transparent 68.25%) 0 76% / 100% 260px;
+  opacity: 0.62;
   pointer-events: none;
 }
 
@@ -61,10 +53,15 @@ body::after {
   position: fixed;
   inset: 0;
   background:
-    linear-gradient(90deg, transparent 0 18%, rgba(125, 213, 255, 0.06) 18.1%, rgba(125, 213, 255, 0.06) 18.18%, transparent 18.3%) 0 50% / 100% 140px,
-    linear-gradient(90deg, transparent 0 27%, rgba(125, 213, 255, 0.06) 27.1%, rgba(125, 213, 255, 0.06) 27.18%, transparent 27.3%) 0 55% / 100% 170px,
-    linear-gradient(90deg, transparent 0 36%, rgba(125, 213, 255, 0.06) 36.1%, rgba(125, 213, 255, 0.06) 36.18%, transparent 36.3%) 0 60% / 100% 200px;
-  opacity: 0.55;
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 92px,
+      rgba(103, 211, 255, 0.04) 93px,
+      transparent 94px,
+      transparent 186px
+    );
+  opacity: 0.22;
   pointer-events: none;
 }
 
@@ -197,25 +194,26 @@ body::after {
 
 .dashboard-hero__glow {
   position: absolute;
-  left: 2%;
-  top: -18%;
-  width: 520px;
-  height: 520px;
+  right: -12%;
+  top: -34%;
+  width: 540px;
+  height: 540px;
   border-radius: 50%;
   background:
-    radial-gradient(circle, rgba(102, 212, 255, 0.18) 0 12%, rgba(255, 171, 100, 0.12) 13%, transparent 42%),
-    radial-gradient(circle, rgba(102, 212, 255, 0.12), transparent 68%);
-  filter: blur(22px);
+    radial-gradient(circle, rgba(71, 164, 255, 0.08) 0 14%, rgba(71, 164, 255, 0.03) 30%, transparent 62%);
+  filter: blur(34px);
+  opacity: 0.42;
 }
 
 .dashboard-hero__grid {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(135deg, transparent 0 24%, rgba(140, 216, 255, 0.11) 24.1%, transparent 24.3%) 0 0 / 260px 260px,
-    linear-gradient(135deg, transparent 0 56%, rgba(140, 216, 255, 0.08) 56.1%, transparent 56.3%) 0 0 / 340px 340px,
-    linear-gradient(90deg, transparent 0 16%, rgba(104, 195, 255, 0.06) 16.08%, rgba(104, 195, 255, 0.06) 16.16%, transparent 16.28%) 0 62% / 100% 150px;
-  opacity: 0.7;
+    linear-gradient(120deg, transparent 0 24%, rgba(123, 218, 255, 0.055) 24.1%, transparent 24.3%) 0 0 / 360px 360px,
+    linear-gradient(120deg, transparent 0 66%, rgba(123, 218, 255, 0.03) 66.1%, transparent 66.3%) 0 0 / 520px 520px,
+    linear-gradient(90deg, transparent, rgba(120, 214, 255, 0.025) 50%, transparent) 0 36% / 100% 1px,
+    linear-gradient(90deg, transparent, rgba(120, 214, 255, 0.02) 50%, transparent) 0 68% / 100% 1px;
+  opacity: 0.5;
 }
 
 .dashboard-hero__content {
@@ -935,6 +933,32 @@ h3 {
   gap: 8px;
 }
 
+.content-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.content-toolbar__spacer {
+  flex: 1;
+}
+
+.content-toolbar__button {
+  appearance: none;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 112, 112, 0.32);
+  border-radius: 12px;
+  background: rgba(44, 13, 18, 0.72);
+  color: #ffd1d1;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
 .card-action-button {
   appearance: none;
   min-height: 38px;
@@ -952,6 +976,12 @@ h3 {
 
 .card-action-button--ghost {
   background: rgba(8, 22, 34, 0.76);
+}
+
+.card-action-button--danger {
+  border-color: rgba(255, 112, 112, 0.32);
+  background: rgba(44, 13, 18, 0.72);
+  color: #ffd1d1;
 }
 
 .control-panel {

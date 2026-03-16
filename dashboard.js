@@ -379,6 +379,30 @@ function showDownloadFile(downloadId) {
   });
 }
 
+function eraseDownload(downloadId) {
+  return new Promise((resolve) => {
+    chrome.downloads.erase({ id: downloadId }, () => resolve());
+  });
+}
+
+function eraseAllDownloads() {
+  return new Promise((resolve) => {
+    chrome.downloads.erase({}, () => resolve());
+  });
+}
+
+function deleteHistoryUrl(url) {
+  return new Promise((resolve) => {
+    chrome.history.deleteUrl({ url }, () => resolve());
+  });
+}
+
+function clearAllHistory() {
+  return new Promise((resolve) => {
+    chrome.history.deleteAll(() => resolve());
+  });
+}
+
 function createActionButton(label, className, onClick) {
   const button = document.createElement("button");
   button.className = className;
@@ -453,8 +477,73 @@ function createDownloadCard(item) {
     })
   );
 
+  actions.append(
+    createActionButton("Hapus", "card-action-button card-action-button--danger", async () => {
+      await eraseDownload(item.id);
+      await renderDownloads();
+    })
+  );
+
   card.append(actions);
   return card;
+}
+
+function createHistoryCard(item) {
+  const card = createClickableCard(
+    "History",
+    item.title || item.url || "Tanpa judul",
+    "Jejak halaman yang baru dibuka dari browser aktif.",
+    item.url || "",
+    [`${item.visitCount || 0} kunjungan`, formatDate(item.lastVisitTime)]
+  );
+  const actions = document.createElement("div");
+
+  actions.className = "content-card__actions";
+  actions.append(
+    createActionButton("Hapus", "card-action-button card-action-button--danger", async () => {
+      if (!item.url) {
+        return;
+      }
+
+      await deleteHistoryUrl(item.url);
+      await renderHistory();
+    })
+  );
+
+  card.append(actions);
+  return card;
+}
+
+function appendPanelToolbar(view) {
+  if (!dataListElement) {
+    return;
+  }
+
+  const toolbar = document.createElement("div");
+  const spacer = document.createElement("div");
+  const button = document.createElement("button");
+
+  toolbar.className = "content-toolbar";
+  spacer.className = "content-toolbar__spacer";
+  button.className = "content-toolbar__button";
+  button.type = "button";
+  button.textContent = "Clear all";
+
+  button.addEventListener("click", async () => {
+    if (view === "downloads") {
+      await eraseAllDownloads();
+      await renderDownloads();
+      return;
+    }
+
+    if (view === "history") {
+      await clearAllHistory();
+      await renderHistory();
+    }
+  });
+
+  toolbar.append(spacer, button);
+  dataListElement.before(toolbar);
 }
 
 function flattenBookmarks(nodes, bucket = []) {
@@ -769,6 +858,8 @@ async function renderDownloads() {
   const items = await getDownloads();
   updateMeta("downloads", items.length);
   dataListElement.className = "data-list";
+  dataListElement.previousElementSibling?.classList?.contains("content-toolbar") && dataListElement.previousElementSibling.remove();
+  appendPanelToolbar("downloads");
 
   if (items.length === 0) {
     renderEmpty("Belum ada data download yang bisa ditampilkan.");
@@ -790,6 +881,7 @@ async function renderBookmarks() {
   const items = await getBookmarks();
   updateMeta("bookmarks", items.length);
   dataListElement.className = "data-list";
+  dataListElement.previousElementSibling?.classList?.contains("content-toolbar") && dataListElement.previousElementSibling.remove();
 
   if (items.length === 0) {
     renderEmpty("Belum ada bookmark yang tersedia di browser ini.");
@@ -817,6 +909,8 @@ async function renderHistory() {
   const items = await getHistory();
   updateMeta("history", items.length);
   dataListElement.className = "data-list";
+  dataListElement.previousElementSibling?.classList?.contains("content-toolbar") && dataListElement.previousElementSibling.remove();
+  appendPanelToolbar("history");
 
   if (items.length === 0) {
     renderEmpty("Riwayat browsing belum ada atau belum bisa diakses.");
@@ -825,13 +919,7 @@ async function renderHistory() {
 
   dataListElement.replaceChildren(
     ...items.map((item) => {
-      return createClickableCard(
-        "History",
-        item.title || item.url || "Tanpa judul",
-        "Jejak halaman yang baru dibuka dari browser aktif.",
-        item.url || "",
-        [`${item.visitCount || 0} kunjungan`, formatDate(item.lastVisitTime)]
-      );
+      return createHistoryCard(item);
     })
   );
 }
@@ -843,6 +931,7 @@ async function renderView(view) {
 
   statusElement.textContent = "Loading";
   countElement.textContent = "0";
+  dataListElement?.previousElementSibling?.classList?.contains("content-toolbar") && dataListElement.previousElementSibling.remove();
 
   if (view === "downloads") {
     await renderDownloads();
