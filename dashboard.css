@@ -327,6 +327,7 @@ h1 {
 .hero-meta {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: 104px 104px;
   gap: 12px;
   align-content: start;
 }
@@ -343,13 +344,13 @@ h1 {
 }
 
 .hero-meta__item {
-  min-height: 78px;
+  min-height: 104px;
   padding: 16px;
 }
 
 .hero-meta__item--wide {
   grid-column: 1 / -1;
-  min-height: 96px;
+  min-height: 104px;
 }
 
 .label {
@@ -422,6 +423,12 @@ h1 {
   width: 74px;
   height: 74px;
   filter: drop-shadow(0 0 12px rgba(104, 216, 255, 0.2));
+}
+
+.hero-meta__item strong,
+#hero-clock {
+  display: block;
+  margin-top: 10px;
 }
 
 .hero-side .radar-card,
