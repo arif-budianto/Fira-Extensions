@@ -173,7 +173,7 @@ body::after {
 
 .dashboard-shell--newtab {
   display: grid;
-  grid-template-rows: minmax(220px, 26vh) minmax(0, 1fr);
+  grid-template-rows: minmax(190px, 22vh) minmax(0, 1fr);
   gap: 24px;
 }
 
@@ -223,14 +223,14 @@ body::after {
   align-items: flex-start;
   gap: 30px;
   height: 100%;
-  padding: 18px 24px 16px;
+  padding: 18px 24px;
 }
 
 .hero-copy {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 12px;
+  gap: 10px;
   max-width: 760px;
 }
 
@@ -272,7 +272,7 @@ h3 {
 
 h1 {
   max-width: none;
-  font-size: clamp(42px, 5.2vw, 86px);
+  font-size: clamp(38px, 4.6vw, 74px);
   line-height: 1;
   white-space: nowrap;
 }
@@ -289,7 +289,7 @@ h1 {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 2px;
+  margin-top: 0;
 }
 
 .hero-action {
