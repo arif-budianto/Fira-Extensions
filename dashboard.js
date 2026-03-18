@@ -385,6 +385,15 @@ function saveTodos(todos) {
   });
 }
 
+function scheduleIdleWork(callback, timeout = 1200) {
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(callback, { timeout });
+    return;
+  }
+
+  window.setTimeout(callback, Math.min(timeout, 600));
+}
+
 function toggleOnboarding(show) {
   if (!onboardingBackdropElement) {
     return;
@@ -1320,6 +1329,28 @@ async function bootstrapTodos() {
   todoState = await getTodos();
 }
 
+function prefetchViewData() {
+  const tasks = [];
+
+  if (activeView !== "downloads") {
+    tasks.push(() => getDownloads());
+  }
+
+  if (activeView !== "bookmarks") {
+    tasks.push(() => getBookmarks());
+  }
+
+  if (activeView !== "history") {
+    tasks.push(() => getHistory());
+  }
+
+  tasks.forEach((task, index) => {
+    scheduleIdleWork(() => {
+      task().catch(() => {});
+    }, 900 + index * 250);
+  });
+}
+
 async function bootstrapApp() {
   bootstrapInitialState();
   bindOnboarding();
@@ -1329,6 +1360,7 @@ async function bootstrapApp() {
   updateClock();
   bindNavigation();
   await renderView(getCurrentView());
+  prefetchViewData();
 
   if (clockIntervalId) {
     window.clearInterval(clockIntervalId);

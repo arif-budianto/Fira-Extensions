@@ -142,7 +142,7 @@ body::after {
   padding: 0 16px;
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(11, 24, 36, 0.94);
   color: var(--text);
   font: inherit;
   outline: none;
@@ -150,7 +150,9 @@ body::after {
 
 .form-field select {
   appearance: none;
+  -webkit-appearance: none;
   padding-right: 52px;
+  color-scheme: dark;
   background-image:
     linear-gradient(45deg, transparent 50%, rgba(237, 247, 255, 0.82) 50%),
     linear-gradient(135deg, rgba(237, 247, 255, 0.82) 50%, transparent 50%);
@@ -159,6 +161,19 @@ body::after {
     calc(100% - 16px) calc(50% - 3px);
   background-size: 6px 6px, 6px 6px;
   background-repeat: no-repeat;
+}
+
+.form-field select option,
+.form-field select optgroup {
+  color: #07111a;
+  background: #eef7ff;
+}
+
+.form-field select option:checked,
+.form-field select option:hover,
+.form-field select option:focus {
+  color: #07111a;
+  background: #b8dcff;
 }
 
 .form-field input:focus,
@@ -233,13 +248,19 @@ body::after {
 }
 
 .dashboard-hero,
-.content-panel,
-.control-card {
+.content-panel {
   border: 1px solid var(--line);
   border-radius: 32px;
   background: var(--panel);
   box-shadow: var(--shadow);
   backdrop-filter: blur(18px);
+}
+
+.control-card {
+  border: 1px solid var(--line);
+  border-radius: 32px;
+  background: rgba(8, 19, 30, 0.94);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
 }
 
 .dashboard-hero {
@@ -368,12 +389,17 @@ h1 {
 }
 
 .hero-action:hover,
-.hero-action:focus-visible,
-.control-card:hover,
-.control-card.is-active {
+.hero-action:focus-visible {
   transform: translateY(-2px);
   border-color: var(--accent);
   box-shadow: 0 18px 34px rgba(0, 0, 0, 0.28);
+}
+
+.control-card:hover,
+.control-card.is-active {
+  border-color: var(--accent);
+  background: rgba(10, 24, 37, 0.98);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.16);
 }
 
 .hero-action--ghost {
@@ -558,6 +584,8 @@ h3 {
   min-height: 0;
   overflow: auto;
   padding-right: 6px;
+  overscroll-behavior: contain;
+  contain: layout paint;
 }
 
 .content-scroll:has(.data-list--overview) {
@@ -933,6 +961,7 @@ h3 {
   display: grid;
   gap: 12px;
   background: linear-gradient(180deg, rgba(12, 28, 42, 0.95), rgba(7, 18, 28, 0.92));
+  contain: layout paint;
 }
 
 .card-tag {
@@ -991,15 +1020,15 @@ h3 {
 .content-card--clickable {
   cursor: pointer;
   transition:
-    transform 160ms ease,
     border-color 160ms ease,
-    box-shadow 160ms ease;
+    box-shadow 160ms ease,
+    background 160ms ease;
 }
 
 .content-card--clickable:hover {
-  transform: translateY(-2px);
   border-color: var(--line-strong);
-  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.16);
+  background: linear-gradient(180deg, rgba(14, 31, 46, 0.98), rgba(8, 20, 31, 0.94));
 }
 
 .content-card__actions {
@@ -1069,6 +1098,8 @@ h3 {
   overflow: auto;
   padding: 4px 8px 8px 0;
   scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+  contain: layout paint;
 }
 
 .control-panel::-webkit-scrollbar {
@@ -1089,10 +1120,10 @@ h3 {
   text-align: left;
   cursor: pointer;
   transition:
-    transform 160ms ease,
     border-color 160ms ease,
     box-shadow 160ms ease,
     background 160ms ease;
+  contain: layout paint;
 }
 
 .control-card strong {
