@@ -42,6 +42,7 @@ const settingsNameElement = document.getElementById("settings-name");
 const settingsTimezoneElement = document.getElementById("settings-timezone");
 const settingsThemeElement = document.getElementById("settings-theme");
 const settingsFabElement = document.getElementById("settings-fab");
+const settingsInlineElement = document.getElementById("settings-inline");
 const settingsCancelElement = document.getElementById("settings-cancel");
 
 const timezoneLabels = {
@@ -66,6 +67,34 @@ const dailyMessages = [
 let profileState = null;
 let todoState = [];
 let todoEditingId = null;
+let activeView = "overview";
+let clockIntervalId = null;
+let lastGreetingSignature = "";
+let lastClockValue = "";
+let lastTimezoneLabel = "";
+let renderRequestId = 0;
+
+const dateTimeFormatterCache = new Map();
+const dataCache = {
+  downloads: {
+    ttlMs: 10000,
+    data: null,
+    expiresAt: 0,
+    inFlight: null
+  },
+  bookmarks: {
+    ttlMs: 60000,
+    data: null,
+    expiresAt: 0,
+    inFlight: null
+  },
+  history: {
+    ttlMs: 15000,
+    data: null,
+    expiresAt: 0,
+    inFlight: null
+  }
+};
 
 const themePresets = {
   cyan: {
@@ -88,7 +117,7 @@ const themePresets = {
   }
 };
 
-function getCurrentView() {
+function readViewFromLocation() {
   const params = new URLSearchParams(window.location.search);
   const view = params.get("view");
 
@@ -97,6 +126,10 @@ function getCurrentView() {
   }
 
   return "overview";
+}
+
+function getCurrentView() {
+  return activeView;
 }
 
 function isNewTabPage() {
@@ -111,7 +144,7 @@ function updateMeta(view, total) {
   }
 
   if (view === "overview") {
-    applyGreeting();
+    updateGreeting(true);
   } else {
     titleElement.textContent = config.title;
     subtitleElement.textContent = config.subtitle;
@@ -131,12 +164,22 @@ function createTodoId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function getDateTimeFormatter(locale, options) {
+  const cacheKey = `${locale}:${JSON.stringify(options)}`;
+
+  if (!dateTimeFormatterCache.has(cacheKey)) {
+    dateTimeFormatterCache.set(cacheKey, new Intl.DateTimeFormat(locale, options));
+  }
+
+  return dateTimeFormatterCache.get(cacheKey);
+}
+
 function formatDate(value) {
   if (!value) {
     return "Waktu tidak tersedia";
   }
 
-  return new Intl.DateTimeFormat("id-ID", {
+  return getDateTimeFormatter("id-ID", {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(new Date(value));
@@ -167,7 +210,7 @@ function getGreetingByHour(hour) {
 }
 
 function getCurrentHourInTimezone() {
-  const parts = new Intl.DateTimeFormat("id-ID", {
+  const parts = getDateTimeFormatter("id-ID", {
     hour: "2-digit",
     hour12: false,
     timeZone: getCurrentTimezone()
@@ -178,7 +221,7 @@ function getCurrentHourInTimezone() {
 }
 
 function getCurrentDateKey() {
-  return new Intl.DateTimeFormat("en-CA", {
+  return getDateTimeFormatter("en-CA", {
     timeZone: getCurrentTimezone(),
     year: "numeric",
     month: "2-digit",
@@ -198,6 +241,10 @@ function getDailyMessage() {
 }
 
 function applyGreeting() {
+  if (!titleElement || !subtitleElement) {
+    return;
+  }
+
   const name = profileState?.name || "Abang";
   const greeting = getGreetingByHour(getCurrentHourInTimezone());
 
@@ -205,12 +252,28 @@ function applyGreeting() {
   subtitleElement.textContent = getDailyMessage();
 }
 
+function updateGreeting(force = false) {
+  const greetingSignature = [
+    profileState?.name || "Abang",
+    getCurrentTimezone(),
+    getCurrentDateKey(),
+    getCurrentHourInTimezone()
+  ].join("|");
+
+  if (!force && lastGreetingSignature === greetingSignature) {
+    return;
+  }
+
+  lastGreetingSignature = greetingSignature;
+  applyGreeting();
+}
+
 function updateClock() {
   if (!heroClockElement) {
     return;
   }
 
-  heroClockElement.textContent = new Intl.DateTimeFormat("id-ID", {
+  const nextClockValue = getDateTimeFormatter("id-ID", {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
@@ -219,12 +282,22 @@ function updateClock() {
     .format(new Date())
     .replace(/:/g, ".");
 
-  if (heroTimezoneLabelElement) {
-    heroTimezoneLabelElement.textContent = `Local Time ${getTimezoneLabel()}`;
+  if (lastClockValue !== nextClockValue) {
+    lastClockValue = nextClockValue;
+    heroClockElement.textContent = nextClockValue;
   }
 
-  if (getCurrentView() === "overview") {
-    applyGreeting();
+  if (heroTimezoneLabelElement) {
+    const nextTimezoneLabel = `Local Time ${getTimezoneLabel()}`;
+
+    if (lastTimezoneLabel !== nextTimezoneLabel) {
+      lastTimezoneLabel = nextTimezoneLabel;
+      heroTimezoneLabelElement.textContent = nextTimezoneLabel;
+    }
+  }
+
+  if (activeView === "overview") {
+    updateGreeting();
   }
 }
 
@@ -251,6 +324,47 @@ function applyTheme(themeKey) {
   document.documentElement.style.setProperty("--accent-glow", theme.accentGlow);
   document.documentElement.style.setProperty("--line", theme.line);
   document.documentElement.style.setProperty("--line-strong", theme.lineStrong);
+}
+
+function invalidateDataCache(view) {
+  if (!dataCache[view]) {
+    return;
+  }
+
+  dataCache[view].data = null;
+  dataCache[view].expiresAt = 0;
+  dataCache[view].inFlight = null;
+}
+
+function readCachedData(view, loader, options = {}) {
+  const cacheEntry = dataCache[view];
+
+  if (!cacheEntry) {
+    return loader();
+  }
+
+  const { force = false } = options;
+  const now = Date.now();
+
+  if (!force && cacheEntry.data && cacheEntry.expiresAt > now) {
+    return Promise.resolve(cacheEntry.data);
+  }
+
+  if (!force && cacheEntry.inFlight) {
+    return cacheEntry.inFlight;
+  }
+
+  cacheEntry.inFlight = Promise.resolve(loader())
+    .then((data) => {
+      cacheEntry.data = data;
+      cacheEntry.expiresAt = Date.now() + cacheEntry.ttlMs;
+      return data;
+    })
+    .finally(() => {
+      cacheEntry.inFlight = null;
+    });
+
+  return cacheEntry.inFlight;
 }
 
 function getTodos() {
@@ -319,6 +433,9 @@ function bindOnboarding() {
 
     await saveProfile(profileState);
     toggleOnboarding(false);
+    lastGreetingSignature = "";
+    lastClockValue = "";
+    lastTimezoneLabel = "";
     updateClock();
     updateMeta(getCurrentView(), Number(countElement.textContent || "0"));
   });
@@ -397,16 +514,18 @@ function renderEmpty(message) {
   dataListElement.append(emptyElement);
 }
 
-function getDownloads() {
-  return new Promise((resolve) => {
-    chrome.downloads.search(
-      {
-        limit: 20,
-        orderBy: ["-startTime"]
-      },
-      (items) => resolve(items || [])
-    );
-  });
+function getDownloads(options = {}) {
+  return readCachedData("downloads", () => {
+    return new Promise((resolve) => {
+      chrome.downloads.search(
+        {
+          limit: 20,
+          orderBy: ["-startTime"]
+        },
+        (items) => resolve(items || [])
+      );
+    });
+  }, options);
 }
 
 function pauseDownload(downloadId) {
@@ -503,7 +622,8 @@ function createDownloadCard(item) {
     actions.append(
       createActionButton("Pause", "card-action-button", async () => {
         await pauseDownload(item.id);
-        await renderDownloads();
+        invalidateDataCache("downloads");
+        await renderView("downloads", { force: true });
       })
     );
   }
@@ -512,7 +632,8 @@ function createDownloadCard(item) {
     actions.append(
       createActionButton("Lanjut", "card-action-button", async () => {
         await resumeDownload(item.id);
-        await renderDownloads();
+        invalidateDataCache("downloads");
+        await renderView("downloads", { force: true });
       })
     );
   }
@@ -521,7 +642,8 @@ function createDownloadCard(item) {
     actions.append(
       createActionButton("Batalkan", "card-action-button card-action-button--ghost", async () => {
         await cancelDownload(item.id);
-        await renderDownloads();
+        invalidateDataCache("downloads");
+        await renderView("downloads", { force: true });
       })
     );
   }
@@ -535,7 +657,8 @@ function createDownloadCard(item) {
   actions.append(
     createActionButton("Hapus", "card-action-button card-action-button--danger", async () => {
       await eraseDownload(item.id);
-      await renderDownloads();
+      invalidateDataCache("downloads");
+      await renderView("downloads", { force: true });
     })
   );
 
@@ -561,7 +684,8 @@ function createHistoryCard(item) {
       }
 
       await deleteHistoryUrl(item.url);
-      await renderHistory();
+      invalidateDataCache("history");
+      await renderView("history", { force: true });
     })
   );
 
@@ -587,13 +711,15 @@ function appendPanelToolbar(view) {
   button.addEventListener("click", async () => {
     if (view === "downloads") {
       await eraseAllDownloads();
-      await renderDownloads();
+      invalidateDataCache("downloads");
+      await renderView("downloads", { force: true });
       return;
     }
 
     if (view === "history") {
       await clearAllHistory();
-      await renderHistory();
+      invalidateDataCache("history");
+      await renderView("history", { force: true });
     }
   });
 
@@ -615,41 +741,49 @@ function flattenBookmarks(nodes, bucket = []) {
   return bucket;
 }
 
-function getBookmarks() {
-  return new Promise((resolve) => {
-    chrome.bookmarks.getTree((tree) => {
-      resolve(flattenBookmarks(tree).slice(0, 30));
+function getBookmarks(options = {}) {
+  return readCachedData("bookmarks", () => {
+    return new Promise((resolve) => {
+      chrome.bookmarks.getTree((tree) => {
+        resolve(flattenBookmarks(tree).slice(0, 30));
+      });
     });
-  });
+  }, options);
 }
 
-function getHistory() {
-  return new Promise((resolve) => {
-    chrome.history.search(
-      {
-        text: "",
-        maxResults: 80,
-        startTime: Date.now() - 1000 * 60 * 60 * 24 * 30
-      },
-      (items) => {
-        const filteredItems = (items || []).filter((item) => {
-          const url = item.url || "";
+function getHistory(options = {}) {
+  return readCachedData(
+    "history",
+    () => {
+      return new Promise((resolve) => {
+        chrome.history.search(
+          {
+            text: "",
+            maxResults: 80,
+            startTime: Date.now() - 1000 * 60 * 60 * 24 * 30
+          },
+          (items) => {
+            const filteredItems = (items || []).filter((item) => {
+              const url = item.url || "";
 
-          if (!url) {
-            return false;
+              if (!url) {
+                return false;
+              }
+
+              return !url.startsWith("chrome-extension://") && !url.startsWith("chrome://");
+            });
+
+            resolve(filteredItems.slice(0, 30));
           }
-
-          return !url.startsWith("chrome-extension://") && !url.startsWith("chrome://");
-        });
-
-        resolve(filteredItems.slice(0, 30));
-      }
-    );
-  });
+        );
+      });
+    },
+    options
+  );
 }
 
 function bindInlineActions(scope) {
-  scope.querySelectorAll(".hero-action, .overview-action").forEach((button) => {
+  scope.querySelectorAll(".overview-action").forEach((button) => {
     button.addEventListener("click", () => {
       handleAction(button.dataset.action, button.dataset.view);
     });
@@ -657,11 +791,11 @@ function bindInlineActions(scope) {
 }
 
 async function rerenderOverview() {
-  if (getCurrentView() !== "overview") {
+  if (activeView !== "overview") {
     return;
   }
 
-  await renderOverview();
+  await renderOverview({ requestId: renderRequestId });
 }
 
 function bindGoogleSearch(scope) {
@@ -865,8 +999,12 @@ function createTodoCard() {
   return todoCard;
 }
 
-async function renderOverview() {
+async function renderOverview(options = {}) {
   if (!dataListElement) {
+    return;
+  }
+
+  if (options.requestId && options.requestId !== renderRequestId) {
     return;
   }
 
@@ -905,12 +1043,16 @@ async function renderOverview() {
   bindGoogleSearch(overviewCard);
 }
 
-async function renderDownloads() {
+async function renderDownloads(options = {}) {
   if (!dataListElement) {
     return;
   }
 
-  const items = await getDownloads();
+  const items = await getDownloads(options);
+
+  if (options.requestId && options.requestId !== renderRequestId) {
+    return;
+  }
   updateMeta("downloads", items.length);
   dataListElement.className = "data-list";
   dataListElement.previousElementSibling?.classList?.contains("content-toolbar") && dataListElement.previousElementSibling.remove();
@@ -928,12 +1070,16 @@ async function renderDownloads() {
   );
 }
 
-async function renderBookmarks() {
+async function renderBookmarks(options = {}) {
   if (!dataListElement) {
     return;
   }
 
-  const items = await getBookmarks();
+  const items = await getBookmarks(options);
+
+  if (options.requestId && options.requestId !== renderRequestId) {
+    return;
+  }
   updateMeta("bookmarks", items.length);
   dataListElement.className = "data-list";
   dataListElement.previousElementSibling?.classList?.contains("content-toolbar") && dataListElement.previousElementSibling.remove();
@@ -956,12 +1102,16 @@ async function renderBookmarks() {
   );
 }
 
-async function renderHistory() {
+async function renderHistory(options = {}) {
   if (!dataListElement) {
     return;
   }
 
-  const items = await getHistory();
+  const items = await getHistory(options);
+
+  if (options.requestId && options.requestId !== renderRequestId) {
+    return;
+  }
   updateMeta("history", items.length);
   dataListElement.className = "data-list";
   dataListElement.previousElementSibling?.classList?.contains("content-toolbar") && dataListElement.previousElementSibling.remove();
@@ -979,31 +1129,72 @@ async function renderHistory() {
   );
 }
 
-async function renderView(view) {
+async function renderView(view, options = {}) {
   if (!statusElement || !countElement) {
     return;
   }
+
+  const requestId = ++renderRequestId;
+  const { force = false } = options;
 
   statusElement.textContent = "Loading";
   countElement.textContent = "0";
   dataListElement?.previousElementSibling?.classList?.contains("content-toolbar") && dataListElement.previousElementSibling.remove();
 
   if (view === "downloads") {
-    await renderDownloads();
+    await renderDownloads({ force, requestId });
     return;
   }
 
   if (view === "bookmarks") {
-    await renderBookmarks();
+    await renderBookmarks({ force, requestId });
     return;
   }
 
   if (view === "history") {
-    await renderHistory();
+    await renderHistory({ force, requestId });
     return;
   }
 
-  await renderOverview();
+  await renderOverview({ requestId });
+}
+
+function syncUrlWithView(view, replace = false) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("view", view);
+
+  if (replace) {
+    window.history.replaceState({}, "", `${url.pathname}?${url.searchParams.toString()}`);
+    return;
+  }
+
+  window.history.pushState({}, "", `${url.pathname}?${url.searchParams.toString()}`);
+}
+
+async function navigateToView(view, options = {}) {
+  const { force = false, replaceHistory = false } = options;
+
+  if (!view || !viewConfig[view]) {
+    return;
+  }
+
+  if (!force && view === activeView) {
+    return;
+  }
+
+  activeView = view;
+
+  if (replaceHistory) {
+    syncUrlWithView(view, true);
+  } else {
+    const currentViewParam = new URLSearchParams(window.location.search).get("view");
+
+    if (currentViewParam !== view) {
+      syncUrlWithView(view);
+    }
+  }
+
+  await renderView(view, { force });
 }
 
 function handleAction(action, view) {
@@ -1016,9 +1207,7 @@ function handleAction(action, view) {
     return;
   }
 
-  const url = new URL(window.location.href);
-  url.searchParams.set("view", view);
-  window.location.href = url.toString();
+  navigateToView(view);
 }
 
 function bindNavigation() {
@@ -1033,6 +1222,17 @@ function bindNavigation() {
       handleAction(button.dataset.action, button.dataset.view);
     });
   });
+
+  window.addEventListener("popstate", async () => {
+    const nextView = readViewFromLocation();
+
+    if (nextView === activeView) {
+      return;
+    }
+
+    activeView = nextView;
+    await renderView(nextView, { force: true });
+  });
 }
 
 function bootstrapInitialState() {
@@ -1046,6 +1246,8 @@ function bootstrapInitialState() {
     params.set("view", "overview");
     window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
   }
+
+  activeView = readViewFromLocation();
 }
 
 async function bootstrapProfile() {
@@ -1070,13 +1272,15 @@ async function bootstrapProfile() {
 }
 
 function bindSettings() {
-  if (!settingsFabElement || !settingsFormElement || !settingsCancelElement) {
+  if (!settingsFormElement || !settingsCancelElement) {
     return;
   }
 
-  settingsFabElement.addEventListener("click", () => {
-    syncSettingsForm();
-    toggleSettings(true);
+  [settingsFabElement, settingsInlineElement].filter(Boolean).forEach((button) => {
+    button.addEventListener("click", () => {
+      syncSettingsForm();
+      toggleSettings(true);
+    });
   });
 
   settingsCancelElement.addEventListener("click", () => {
@@ -1103,6 +1307,9 @@ function bindSettings() {
 
     await saveProfile(profileState);
     applyTheme(theme);
+    lastGreetingSignature = "";
+    lastClockValue = "";
+    lastTimezoneLabel = "";
     updateClock();
     updateMeta(getCurrentView(), Number(countElement.textContent || "0"));
     toggleSettings(false);
@@ -1122,7 +1329,12 @@ async function bootstrapApp() {
   updateClock();
   bindNavigation();
   await renderView(getCurrentView());
-  window.setInterval(updateClock, 1000);
+
+  if (clockIntervalId) {
+    window.clearInterval(clockIntervalId);
+  }
+
+  clockIntervalId = window.setInterval(updateClock, 1000);
 }
 
 bootstrapApp();
