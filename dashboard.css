@@ -21,9 +21,9 @@
 html,
 body {
   margin: 0;
-  min-height: 100%;
+  height: 100%;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: hidden;
   background:
     linear-gradient(135deg, rgba(7, 20, 31, 0.98), rgba(3, 9, 16, 1)),
     linear-gradient(180deg, var(--bg), var(--bg-deep));
@@ -33,7 +33,7 @@ body {
 
 body {
   position: relative;
-  min-height: 100vh;
+  height: 100vh;
 }
 
 body::before {
@@ -194,6 +194,7 @@ body::after {
 .dashboard-shell {
   position: relative;
   width: 100%;
+  height: 100vh;
   min-height: 100vh;
   padding: 28px;
 }
@@ -227,7 +228,7 @@ body::after {
 
 .dashboard-shell--newtab {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, auto) minmax(0, 1fr);
   gap: 24px;
 }
 
@@ -503,16 +504,20 @@ h1 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
   gap: 24px;
+  height: 100%;
   min-height: 0;
-  align-items: start;
+  align-items: stretch;
+  overflow: hidden;
 }
 
 .content-panel {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
   min-height: 0;
   min-width: 0;
   padding: 24px;
+  overflow: hidden;
 }
 
 .content-panel--main {
@@ -549,13 +554,14 @@ h3 {
 }
 
 .content-scroll {
+  height: 100%;
   min-height: 0;
   overflow: auto;
   padding-right: 6px;
 }
 
 .content-scroll:has(.data-list--overview) {
-  overflow: hidden;
+  overflow: auto;
 }
 
 .content-scroll::-webkit-scrollbar {
@@ -573,17 +579,19 @@ h3 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
+  min-height: min-content;
 }
 
 .data-list--overview {
   grid-template-columns: 1.2fr 0.8fr;
   align-items: stretch;
-  min-height: 100%;
+  min-height: min-content;
 }
 
 .overview-stack {
   display: grid;
   gap: 18px;
+  min-height: min-content;
 }
 
 .overview-card,
@@ -1055,7 +1063,23 @@ h3 {
   display: grid;
   gap: 14px;
   align-content: start;
+  height: 100%;
   min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px 8px 8px 0;
+  scrollbar-gutter: stable;
+}
+
+.control-panel::-webkit-scrollbar {
+  width: 10px;
+}
+
+.control-panel::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(102, 212, 255, 0.26);
+  background-clip: padding-box;
 }
 
 .control-card {
@@ -1156,7 +1180,15 @@ h3 {
 }
 
 @media (max-width: 920px) {
+  html,
+  body {
+    height: auto;
+    min-height: 100%;
+    overflow-y: auto;
+  }
+
   .dashboard-shell {
+    height: auto;
     min-height: 100vh;
     padding: 18px;
   }
@@ -1167,13 +1199,19 @@ h3 {
 
   .dashboard-main {
     grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
   }
 
   .control-panel {
     grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
+    padding: 0;
   }
 
   .content-panel {
+    height: auto;
     min-height: 640px;
   }
 
