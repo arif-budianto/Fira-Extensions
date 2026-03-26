@@ -30,6 +30,7 @@ const heroTimezoneLabelElement = document.getElementById("hero-timezone-label");
 const panelTitleElement = document.getElementById("panel-title");
 const panelCaptionElement = document.getElementById("panel-caption");
 const dataListElement = document.getElementById("data-list");
+const contentScrollElement = document.querySelector(".content-scroll");
 const actionButtons = document.querySelectorAll(".hero-action");
 const controlButtons = document.querySelectorAll(".control-card");
 const onboardingBackdropElement = document.getElementById("onboarding-backdrop");
@@ -68,11 +69,15 @@ let profileState = null;
 let todoState = [];
 let todoEditingId = null;
 let activeView = "overview";
-let clockIntervalId = null;
+let clockTimerId = null;
 let lastGreetingSignature = "";
 let lastClockValue = "";
 let lastTimezoneLabel = "";
 let renderRequestId = 0;
+let toolbarElement = null;
+
+const reducedMotionMedia =
+  typeof window.matchMedia === "function" ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
 
 const dateTimeFormatterCache = new Map();
 const dataCache = {
@@ -209,6 +214,19 @@ function getGreetingByHour(hour) {
   return "Selamat Malam";
 }
 
+function isLiteMode() {
+  const saveDataEnabled = Boolean(navigator.connection?.saveData);
+  const lowMemoryDevice = typeof navigator.deviceMemory === "number" && navigator.deviceMemory <= 4;
+  const lowCpuDevice = typeof navigator.hardwareConcurrency === "number" && navigator.hardwareConcurrency <= 4;
+  const prefersReducedMotion = Boolean(reducedMotionMedia?.matches);
+
+  return saveDataEnabled || lowMemoryDevice || lowCpuDevice || prefersReducedMotion;
+}
+
+function applyRuntimeMode() {
+  document.documentElement.classList.toggle("is-lite-mode", isLiteMode());
+}
+
 function getCurrentHourInTimezone() {
   const parts = getDateTimeFormatter("id-ID", {
     hour: "2-digit",
@@ -281,8 +299,9 @@ function updateClock() {
   })
     .format(new Date())
     .replace(/:/g, ".");
+  const didClockChange = lastClockValue !== nextClockValue;
 
-  if (lastClockValue !== nextClockValue) {
+  if (didClockChange) {
     lastClockValue = nextClockValue;
     heroClockElement.textContent = nextClockValue;
   }
@@ -296,9 +315,45 @@ function updateClock() {
     }
   }
 
-  if (activeView === "overview") {
+  if (activeView === "overview" && didClockChange && nextClockValue.endsWith(".00")) {
     updateGreeting();
   }
+}
+
+function getNextClockDelay() {
+  return Math.max(250, 1000 - (Date.now() % 1000) + 12);
+}
+
+function stopClock() {
+  if (!clockTimerId) {
+    return;
+  }
+
+  window.clearTimeout(clockTimerId);
+  clockTimerId = null;
+}
+
+function queueClockTick() {
+  stopClock();
+
+  clockTimerId = window.setTimeout(() => {
+    updateClock();
+
+    if (!document.hidden) {
+      queueClockTick();
+    }
+  }, getNextClockDelay());
+}
+
+function startClock() {
+  updateClock();
+
+  if (document.hidden) {
+    stopClock();
+    return;
+  }
+
+  queueClockTick();
 }
 
 function getProfile() {
@@ -392,6 +447,14 @@ function scheduleIdleWork(callback, timeout = 1200) {
   }
 
   window.setTimeout(callback, Math.min(timeout, 600));
+}
+
+function syncContentScrollMode(isOverview) {
+  if (!contentScrollElement) {
+    return;
+  }
+
+  contentScrollElement.classList.toggle("content-scroll--overview", isOverview);
 }
 
 function toggleOnboarding(show) {
@@ -707,33 +770,49 @@ function appendPanelToolbar(view) {
     return;
   }
 
-  const toolbar = document.createElement("div");
-  const spacer = document.createElement("div");
-  const button = document.createElement("button");
+  if (!toolbarElement) {
+    const spacer = document.createElement("div");
+    const button = document.createElement("button");
 
-  toolbar.className = "content-toolbar";
-  spacer.className = "content-toolbar__spacer";
-  button.className = "content-toolbar__button";
-  button.type = "button";
-  button.textContent = "Clear all";
+    toolbarElement = document.createElement("div");
+    toolbarElement.className = "content-toolbar";
+    spacer.className = "content-toolbar__spacer";
+    button.className = "content-toolbar__button";
+    button.type = "button";
+    toolbarElement.append(spacer, button);
 
-  button.addEventListener("click", async () => {
-    if (view === "downloads") {
-      await eraseAllDownloads();
-      invalidateDataCache("downloads");
-      await renderView("downloads", { force: true });
-      return;
-    }
+    button.addEventListener("click", async () => {
+      const currentView = toolbarElement?.dataset.view;
 
-    if (view === "history") {
-      await clearAllHistory();
-      invalidateDataCache("history");
-      await renderView("history", { force: true });
-    }
-  });
+      if (currentView === "downloads") {
+        await eraseAllDownloads();
+        invalidateDataCache("downloads");
+        await renderView("downloads", { force: true });
+        return;
+      }
 
-  toolbar.append(spacer, button);
-  dataListElement.before(toolbar);
+      if (currentView === "history") {
+        await clearAllHistory();
+        invalidateDataCache("history");
+        await renderView("history", { force: true });
+      }
+    });
+  }
+
+  const button = toolbarElement.querySelector(".content-toolbar__button");
+  toolbarElement.dataset.view = view;
+
+  if (button) {
+    button.textContent = "Clear all";
+  }
+
+  dataListElement.before(toolbarElement);
+}
+
+function detachPanelToolbar() {
+  if (toolbarElement?.parentElement) {
+    toolbarElement.remove();
+  }
 }
 
 function flattenBookmarks(nodes, bucket = []) {
@@ -1018,6 +1097,8 @@ async function renderOverview(options = {}) {
   }
 
   updateMeta("overview", todoState.length);
+  syncContentScrollMode(true);
+  detachPanelToolbar();
   dataListElement.className = "data-list data-list--overview";
   dataListElement.replaceChildren();
 
@@ -1063,8 +1144,9 @@ async function renderDownloads(options = {}) {
     return;
   }
   updateMeta("downloads", items.length);
+  syncContentScrollMode(false);
   dataListElement.className = "data-list";
-  dataListElement.previousElementSibling?.classList?.contains("content-toolbar") && dataListElement.previousElementSibling.remove();
+  detachPanelToolbar();
   appendPanelToolbar("downloads");
 
   if (items.length === 0) {
@@ -1090,8 +1172,9 @@ async function renderBookmarks(options = {}) {
     return;
   }
   updateMeta("bookmarks", items.length);
+  syncContentScrollMode(false);
   dataListElement.className = "data-list";
-  dataListElement.previousElementSibling?.classList?.contains("content-toolbar") && dataListElement.previousElementSibling.remove();
+  detachPanelToolbar();
 
   if (items.length === 0) {
     renderEmpty("Belum ada bookmark yang tersedia di browser ini.");
@@ -1122,8 +1205,9 @@ async function renderHistory(options = {}) {
     return;
   }
   updateMeta("history", items.length);
+  syncContentScrollMode(false);
   dataListElement.className = "data-list";
-  dataListElement.previousElementSibling?.classList?.contains("content-toolbar") && dataListElement.previousElementSibling.remove();
+  detachPanelToolbar();
   appendPanelToolbar("history");
 
   if (items.length === 0) {
@@ -1148,7 +1232,7 @@ async function renderView(view, options = {}) {
 
   statusElement.textContent = "Loading";
   countElement.textContent = "0";
-  dataListElement?.previousElementSibling?.classList?.contains("content-toolbar") && dataListElement.previousElementSibling.remove();
+  detachPanelToolbar();
 
   if (view === "downloads") {
     await renderDownloads({ force, requestId });
@@ -1217,6 +1301,39 @@ function handleAction(action, view) {
   }
 
   navigateToView(view);
+}
+
+function bindRuntimePreferences() {
+  applyRuntimeMode();
+
+  if (!reducedMotionMedia) {
+    return;
+  }
+
+  const syncRuntimeMode = () => {
+    applyRuntimeMode();
+  };
+
+  if (typeof reducedMotionMedia.addEventListener === "function") {
+    reducedMotionMedia.addEventListener("change", syncRuntimeMode);
+    return;
+  }
+
+  if (typeof reducedMotionMedia.addListener === "function") {
+    reducedMotionMedia.addListener(syncRuntimeMode);
+  }
+}
+
+function bindVisibilityLifecycle() {
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      stopClock();
+      return;
+    }
+
+    prefetchViewData();
+    startClock();
+  });
 }
 
 function bindNavigation() {
@@ -1330,6 +1447,10 @@ async function bootstrapTodos() {
 }
 
 function prefetchViewData() {
+  if (document.hidden || isLiteMode()) {
+    return;
+  }
+
   const tasks = [];
 
   if (activeView !== "downloads") {
@@ -1353,20 +1474,16 @@ function prefetchViewData() {
 
 async function bootstrapApp() {
   bootstrapInitialState();
+  bindRuntimePreferences();
+  bindVisibilityLifecycle();
   bindOnboarding();
   bindSettings();
   await bootstrapProfile();
   await bootstrapTodos();
-  updateClock();
   bindNavigation();
   await renderView(getCurrentView());
   prefetchViewData();
-
-  if (clockIntervalId) {
-    window.clearInterval(clockIntervalId);
-  }
-
-  clockIntervalId = window.setInterval(updateClock, 1000);
+  startClock();
 }
 
 bootstrapApp();

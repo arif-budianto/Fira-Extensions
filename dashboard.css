@@ -597,7 +597,7 @@ h3 {
   contain: layout paint;
 }
 
-.content-scroll:has(.data-list--overview) {
+.content-scroll--overview {
   overflow: auto;
 }
 
@@ -636,6 +636,8 @@ h3 {
 .timeline-card,
 .content-card {
   padding: 22px;
+  content-visibility: auto;
+  contain-intrinsic-size: 220px;
 }
 
 .overview-card {
@@ -754,6 +756,8 @@ h3 {
   border-radius: 24px;
   background: linear-gradient(180deg, rgba(11, 26, 39, 0.94), rgba(7, 18, 28, 0.9));
   align-content: start;
+  content-visibility: auto;
+  contain-intrinsic-size: 320px;
 }
 
 .todo-card__head {
@@ -828,6 +832,8 @@ h3 {
   border: 1px solid var(--line);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.02);
+  content-visibility: auto;
+  contain-intrinsic-size: 78px;
 }
 
 .todo-item.is-done {
@@ -1133,6 +1139,8 @@ h3 {
     box-shadow 160ms ease,
     background 160ms ease;
   contain: layout paint;
+  content-visibility: auto;
+  contain-intrinsic-size: 148px;
 }
 
 .control-card strong {
@@ -1178,13 +1186,83 @@ h3 {
   }
 }
 
+.is-lite-mode body::before,
+.is-lite-mode body::after {
+  opacity: 0.14;
+}
+
+.is-lite-mode .dashboard-hero,
+.is-lite-mode .content-panel,
+.is-lite-mode .onboarding-backdrop,
+.is-lite-mode .settings-backdrop {
+  backdrop-filter: none;
+}
+
+.is-lite-mode .dashboard-hero__glow,
+.is-lite-mode .radar-card__ring {
+  display: none;
+}
+
+.is-lite-mode .dashboard-hero__grid {
+  opacity: 0.22;
+}
+
+.is-lite-mode .radar-card__core {
+  background: var(--panel-strong);
+  box-shadow: none;
+}
+
+.is-lite-mode .radar-card__avatar,
+.is-lite-mode .radar-card__avatar-image {
+  filter: none;
+}
+
+.is-lite-mode #hero-clock {
+  text-shadow: none;
+}
+
+.is-lite-mode .hero-action,
+.is-lite-mode .overview-action,
+.is-lite-mode .control-card,
+.is-lite-mode .card-action-button,
+.is-lite-mode .todo-check__visual {
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.is-lite-mode .hero-action:hover,
+.is-lite-mode .hero-action:focus-visible,
+.is-lite-mode .overview-action:hover,
+.is-lite-mode .overview-action:focus-visible,
+.is-lite-mode .control-card:hover,
+.is-lite-mode .control-card.is-active {
+  transform: none;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-action,
+  .overview-action,
+  .control-card,
+  .card-action-button,
+  .todo-check__visual,
+  .todo-check__visual::after,
+  .radar-card__ring--outer,
+  .radar-card__ring--inner {
+    transition: none;
+    animation: none;
+  }
+}
+
 @media (max-width: 1200px) {
   .data-list--overview,
   .data-list {
     grid-template-columns: 1fr;
   }
 
-  .content-scroll:has(.data-list--overview) {
+  .content-scroll--overview {
     overflow: auto;
   }
 
