@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Orbitron Local";
+  src: url("./assets/fonts/orbitron-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
   --bg: #061018;
@@ -449,12 +457,13 @@ h1 {
 }
 
 #hero-clock {
-  font-family: "SFMono-Regular", "Roboto Mono", "Menlo", "Consolas", monospace;
+  font-family: "Orbitron Local", "JetBrains Mono", "SFMono-Regular", "Menlo", "Consolas", monospace;
   font-size: 34px;
   font-weight: 700;
   line-height: 1;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
   font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 18px rgba(102, 212, 255, 0.18);
 }
 
 .radar-card {
