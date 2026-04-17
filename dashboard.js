@@ -918,10 +918,21 @@ function focusGoogleSearch(scope) {
     return;
   }
 
-  window.requestAnimationFrame(() => {
+  const applyFocus = () => {
     searchInput.focus({ preventScroll: true });
     searchInput.select();
-  });
+  };
+
+  window.requestAnimationFrame(applyFocus);
+  window.setTimeout(applyFocus, 120);
+  window.setTimeout(applyFocus, 320);
+
+  const handleWindowFocus = () => {
+    applyFocus();
+    window.removeEventListener("focus", handleWindowFocus);
+  };
+
+  window.addEventListener("focus", handleWindowFocus);
 }
 
 function createTodoCard() {
