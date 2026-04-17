@@ -907,6 +907,23 @@ function bindGoogleSearch(scope) {
   });
 }
 
+function focusGoogleSearch(scope) {
+  if (!isNewTabPage()) {
+    return;
+  }
+
+  const searchInput = scope.querySelector(".google-search-input");
+
+  if (!searchInput) {
+    return;
+  }
+
+  window.requestAnimationFrame(() => {
+    searchInput.focus({ preventScroll: true });
+    searchInput.select();
+  });
+}
+
 function createTodoCard() {
   const todoCard = document.createElement("article");
   const head = document.createElement("div");
@@ -1131,6 +1148,7 @@ async function renderOverview(options = {}) {
 
   bindInlineActions(overviewCard);
   bindGoogleSearch(overviewCard);
+  focusGoogleSearch(overviewCard);
 }
 
 async function renderDownloads(options = {}) {
